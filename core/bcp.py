@@ -19,16 +19,6 @@ class BCP:
         # Controle de bloqueio
         self.timer_bloqueado = 0
 
-        # Simulação de estatísticas (ex: memória/cache)
-        self.hit = 0
-        self.miss = 0
-
-        # Simulação de I/O ou entrada (se necessário)
-        self.entrada = params.get('entrada', '')
-
-        # Tempo restante de execução (para políticas como SRTF)
-        self.tempo_restante = len(self.instrucoes)
-
     def esta_finalizado(self):
         return self.instrucao_atual >= len(self.instrucoes)
 
@@ -36,14 +26,14 @@ class BCP:
         if not self.esta_finalizado():
             instr = self.instrucoes[self.instrucao_atual]
             self.instrucao_atual += 1
-            self.tempo_executado += 1
-            self.tempo_restante -= 1
+            #self.tempo_executado += 1
+            #self.tempo_restante -= 1
             return instr
         return None
 
-    def bloquear(self, tempo_bloqueio):
+    def bloquear(self):
         self.estado = 'BLOQUEADO'
-        self.timer_bloqueado = tempo_bloqueio
+        self.timer_bloqueado = 99999  # ou outro valor alto só para evitar auto-desbloqueio
 
     def desbloquear(self):
         self.estado = 'PRONTO'

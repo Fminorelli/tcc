@@ -5,7 +5,7 @@ import yaml
 # Adiciona o diretório raiz ao sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-from core import simulador
+from core.core_simulador import simulador
 from modulos.gerenciador_de_processos.politicaGP import politicaGP
 
 if __name__ == "__main__":
@@ -53,3 +53,8 @@ if __name__ == "__main__":
 
         while simulador_obj.indice_evento < len(eventos) or simulador_obj.processo_atual or simulador_obj.fila_prontos or simulador_obj.fila_bloqueados:
             simulador_obj.tick()
+        
+        for p in simulador_obj.lista_processos.keys():
+            print("Processo %s rodou por clock: %s" % (p,simulador_obj.lista_processos[p].tempo_executado))
+            print("Processo %s finalizou no clock: %s" % (p,simulador_obj.lista_processos[p].tempo_termino))
+        
