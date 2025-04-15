@@ -2,7 +2,7 @@
     config:
       nome: gerenciador de processos
       politica:
-        nome: random
+        nome: FIFO
         params:
 
     processos:
