@@ -71,6 +71,7 @@ class simulador:
                 if pid in self.fila_bloqueados:
                     print(f"Desbloqueando PID {pid}")
                     bcp.desbloquear()
+                    # passar na politica primeiro
                     self.fila_bloqueados.remove(pid)
                     self.fila_prontos.append(pid)
 

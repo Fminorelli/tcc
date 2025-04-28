@@ -49,6 +49,7 @@ if __name__ == "__main__":
         simulador_obj = simulador(politica)
 
         eventos = carregar_processos_arquivo(caminho_yaml)
+        print("Eventos: %s" % eventos)
         simulador_obj.carregar_eventos(eventos)
 
         while simulador_obj.indice_evento < len(eventos) or simulador_obj.processo_atual or simulador_obj.fila_prontos or simulador_obj.fila_bloqueados:

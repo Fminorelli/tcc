@@ -2,7 +2,7 @@ class BCP:
     def __init__(self, pid, params, tempo_chegada=0):
         # Identificador do processo
         self.pid = pid
-
+         
         # Instruções e controle de execução
         self.instrucoes = params['instrucoes']
         self.instrucao_atual = 0

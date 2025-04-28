@@ -1,4 +1,3 @@
-# core/politicas/FIFO.py
 from modulos.gerenciador_de_processos.politicaGP import politicaGP  # Importa a classe politicaGP
 
 class Fifo(politicaGP):  # Herda de politicaGP
