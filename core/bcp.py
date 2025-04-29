@@ -1,22 +1,13 @@
 class BCP:
     def __init__(self, pid, params, tempo_chegada=0):
-        # Identificador do processo
         self.pid = pid
-         
-        # Instruções e controle de execução
-        self.instrucoes = params['instrucoes']
+        self.instrucoes = params.get('instrucoes', [])
         self.instrucao_atual = 0
-
-        # Informações de escalonamento
-        self.prioridade = params.get('prioridade', 0)  # pode vir como parâmetro
+        self.prioridade = params.get('prioridade', 0)
         self.tempo_chegada = tempo_chegada
         self.tempo_termino = None
-        self.tempo_executado = 0  # tempo total em CPU
-
-        # Estado do processo: PRONTO, EXECUTANDO, BLOQUEADO, FINALIZADO
+        self.tempo_executado = 0
         self.estado = 'PRONTO'
-
-        # Controle de bloqueio
         self.timer_bloqueado = 0
 
     def esta_finalizado(self):
@@ -26,14 +17,12 @@ class BCP:
         if not self.esta_finalizado():
             instr = self.instrucoes[self.instrucao_atual]
             self.instrucao_atual += 1
-            #self.tempo_executado += 1
-            #self.tempo_restante -= 1
             return instr
         return None
 
-    def bloquear(self):
+    def bloquear(self, timer):
         self.estado = 'BLOQUEADO'
-        self.timer_bloqueado = 99999  # ou outro valor alto só para evitar auto-desbloqueio
+        self.timer_bloqueado = timer
 
     def desbloquear(self):
         self.estado = 'PRONTO'

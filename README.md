@@ -8,3 +8,6 @@ tratar block unblock como uma instrução só
 
 criar função de consulta de bloqueio no simulador para politica
 
+Feito:
+    * Ignorar eventos de unblock na carga de eventos, ja que estes indicam o timer interno de block do processo
+    * BCP do processo é criado na instrução de start

@@ -1,123 +1,110 @@
-import yaml
 from core.bcp import BCP
 
 class simulador:
     def __init__(self, politica_escalonamento):
         self.politica = politica_escalonamento
-        self.lista_processos = {}  # dicionário {pid: BCP}
-        self.fila_prontos = []     # lista de pids prontos
-        self.fila_bloqueados = []  # lista de pids bloqueados
+        self.lista_processos = {}
+        self.fila_prontos = []
+        self.fila_bloqueados = []
         self.processo_atual = None
-        self.tempo = 0             # clock global
+        self.tempo = 0
         self.eventos = []
-        self.indice_evento = 0
-
-    def carregar_processos_arquivo(self, caminho_yaml):
-        with open(caminho_yaml, 'r') as f:
-            dados = yaml.safe_load(f)
-
-        processos_eventos = []
-
-        for nome_pid, info in dados['gp']['processos'].items():
-            pid = int(nome_pid.replace("pid", ""))
-            for evento in info['instrucoes']:
-                tempo, acao = evento.split()
-                processos_eventos.append({
-                    'tempo': int(tempo),
-                    'pid': pid,
-                    'acao': acao
-                })
-
-        # Ordena todos os eventos por tempo de execução
-        processos_eventos.sort(key=lambda e: e['tempo'])
-        self.eventos = processos_eventos
         self.indice_evento = 0
 
     def tick(self):
         self.tempo += 1
         print(f"\n[TICK {self.tempo}]")
 
-        self._processar_eventos_tick()
-        self._atualizar_bloqueados()
         self._executar_processo_atual()
+
+        if self.indice_evento < len(self.eventos) and self.eventos[self.indice_evento]['tempo'] == self.tempo:
+            print(f"Evento programado: {self.eventos[self.indice_evento]['acao']} (PID {self.eventos[self.indice_evento]['pid']})")
+            self._processar_eventos_tick()
+            
+        else:
+            print("Nenhum evento programado.")
+            print(f"Processo Atual: {self.processo_atual}")
+
+        self._atualizar_bloqueados()
 
         if self._precisa_escalonar():
             self._escalonar_proximo()
 
     def _processar_eventos_tick(self):
-        while self.indice_evento < len(self.eventos) and self.eventos[self.indice_evento]['tempo'] == self.tempo:
+        for b in self.lista_processos.keys():
+            print(f"pid: {self.lista_processos[b].pid} tempo executado:{self.lista_processos[b].tempo_executado}")
+
+        # Processa todos os eventos deste tick
+        if self.indice_evento < len(self.eventos) and self.eventos[self.indice_evento]['tempo'] == self.tempo:
             evento = self.eventos[self.indice_evento]
             self.indice_evento += 1
             pid = evento['pid']
             acao = evento['acao']
 
-            if pid not in self.lista_processos:
+            if pid not in self.lista_processos and acao == 'start':
                 self.lista_processos[pid] = BCP(pid=pid, params={'instrucoes': []})
-
-            bcp = self.lista_processos[pid]
-
-            if acao == 'start':
-                print(f"PID {pid} adicionado ao sistema.")
+                print(f"> Processo {pid} adicionado ao sistema.")
                 self.fila_prontos.append(pid)
 
             elif acao == 'block':
-                if bcp.estado == 'EXECUTANDO':
-                    bcp.bloquear()
-                    self.fila_bloqueados.append(pid)
-                    print(f"Bloqueando PID {pid}")
-                    self.processo_atual = None
-
-            elif acao == 'unblock':
-                if pid in self.fila_bloqueados:
-                    print(f"Desbloqueando PID {pid}")
-                    bcp.desbloquear()
-                    # passar na politica primeiro
-                    self.fila_bloqueados.remove(pid)
-                    self.fila_prontos.append(pid)
+                tempo_bloqueio = evento['bloqueio_duracao']
+                
+                self.lista_processos[self.processo_atual].bloquear(tempo_bloqueio)
+                print(f"> Bloqueando processo {pid} por {tempo_bloqueio} ticks.")
+                self.fila_bloqueados.append(pid)
+                self.processo_atual = None
 
             elif acao == 'end':
-                if bcp.estado != 'FINALIZADO':
-                    print(f"PID {pid} finalizado.")
-                    bcp.finalizar(self.tempo)
+                if self.lista_processos[self.processo_atual].estado != 'FINALIZADO':
+                    print(f"> Processo {pid} finalizado.")
+                    self.lista_processos[self.processo_atual].finalizar(self.tempo)
+                    print(f">> Processo atual {self.processo_atual}, pid evento: {pid}")
                     if pid == self.processo_atual:
                         self.processo_atual = None
 
-        print(f"Processo atual: {self.processo_atual}")
-    
     def _atualizar_bloqueados(self):
-        # Se todos os unblock forem via evento, não é necessário atualizar os timers.
-        pass
+        desbloquear_pids = []
+        for pid in list(self.fila_bloqueados):
+            self.lista_processos[self.processo_atual] = self.lista_processos[pid]
+            if self.lista_processos[self.processo_atual].timer_bloqueado > 0:
+                print(f"Processo {pid} está bloqueado (restam {self.lista_processos[self.processo_atual].timer_bloqueado} clocks).")
+                self.lista_processos[self.processo_atual].timer_bloqueado -= 1
+            if self.lista_processos[self.processo_atual].timer_bloqueado == 0:
+                desbloquear_pids.append(pid)
+
+        for pid in desbloquear_pids:
+            print(f"> Processo {pid} desbloqueado e movido para fila de prontos.")
+            self.lista_processos[self.processo_atual] = self.lista_processos[pid]
+            self.lista_processos[self.processo_atual].desbloquear()
+            self.fila_bloqueados.remove(pid)
+            self.fila_prontos.append(pid)
 
     def _executar_processo_atual(self):
         if not self.processo_atual:
             return
-
-        bcp = self.lista_processos[self.processo_atual]
-        instrucao = bcp.proxima_instrucao()
-
-        # Verifica se a instrução é válida
-        if instrucao:
-            print(f"Executando PID {bcp.pid}: {instrucao}")
-            bcp.tempo_executado += 1
-
-        # Verifica se o processo está finalizado após a execução da instrução
-        if bcp.esta_finalizado():
-            bcp.finalizar(self.tempo)
-            print(f"PID {bcp.pid} finalizado.")
-            self.processo_atual = None
+        instrucao = self.lista_processos[self.processo_atual].proxima_instrucao()
+        if self.processo_atual:
+            print(f"Executando processo {self.lista_processos[self.processo_atual].pid}")
+            self.lista_processos[self.processo_atual].tempo_executado += 1
+        #if self.lista_processos[self.processo_atual].esta_finalizado():
+        #    self.lista_processos[self.processo_atual].finalizar(self.tempo)
+        #    print(f"> Processo {self.lista_processos[self.processo_atual].pid} finalizado.")
+        #   self.processo_atual = None
 
     def _precisa_escalonar(self):
-        return self.processo_atual is None and self.fila_prontos
+        return self.processo_atual is None and bool(self.fila_prontos)
 
     def _escalonar_proximo(self):
         pid = self.politica.selecionar_proximo(self.fila_prontos)
         if pid is not None:
             self.fila_prontos.remove(pid)
             self.processo_atual = pid
-            print(pid)
-            self.lista_processos[pid].estado = 'EXECUTANDO'
-            print(f"Escalonado PID {pid}")
-            print("Processo Atual: %s" % self.processo_atual)
+            print(f"> Escalonado processo {pid} para execução.")
+
+    def carregar_eventos(self, eventos):
+        self.eventos = eventos
+        self.indice_evento = 0
+
     
     def carregar_eventos(self, eventos):
         self.eventos = eventos
