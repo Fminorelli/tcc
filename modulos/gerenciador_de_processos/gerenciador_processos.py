@@ -1,4 +1,3 @@
-
 import sys
 import os
 import yaml
@@ -7,46 +6,51 @@ import time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 from core.core_simulador import simulador
 from modulos.gerenciador_de_processos.politicaGP import politicaGP
+from core.bcp import BCP
 
 def carregar_processos_arquivo(caminho_yaml):
+    """Carrega e processa o arquivo YAML com a definição dos processos"""
     with open(caminho_yaml, 'r') as f:
         dados = yaml.safe_load(f)
 
     processos_eventos = []
-    for nome_pid, info in dados['gp']['processos'].items():
+    processos_definidos = dados['gp']['processos']
+
+    processos_bcp = {}
+    for nome_pid, info in processos_definidos.items():
         pid = int(nome_pid.replace("pid", ""))
         instrucoes = info['instrucoes']
+        processos_bcp[pid] = {
+            'start': None,
+            'instrucoes': []
+        }
         i = 0
         while i < len(instrucoes):
-            tempo_ou_bloqueio, acao = instrucoes[i].split()
-            if acao == 'block':
-                tempo_bloqueio, _ = instrucoes[i + 1].split()
-                processos_eventos.append({
-                    'tempo': int(tempo_ou_bloqueio),
-                    'pid': pid,
-                    'acao': 'block',
-                    'bloqueio_duracao': int(tempo_bloqueio)
-                })
+            tempo_ou_valor, acao = instrucoes[i].split()
+            if acao == 'start':
+                processos_bcp[pid]['start'] = int(tempo_ou_valor)
+                i += 1
+            elif acao == 'block':
+                duracao, _ = instrucoes[i + 1].split()
+                processos_bcp[pid]['instrucoes'].append(f"block {duracao}")
                 i += 2
             else:
-                processos_eventos.append({
-                    'tempo': int(tempo_ou_bloqueio),
-                    'pid': pid,
-                    'acao': acao
-                })
+                processos_bcp[pid]['instrucoes'].append(f"{acao} {tempo_ou_valor}")
                 i += 1
 
-    processos_eventos.sort(key=lambda e: e['tempo'])
-    return processos_eventos
+    eventos = []
+    for pid, dados in processos_bcp.items():
+        eventos.append({'tempo': dados['start'], 'pid': pid, 'acao': 'start'})
+    eventos.sort(key=lambda e: e['tempo'])
+
+    return eventos, processos_bcp
 
 def carregar_politica_arquivo(caminho_yaml):
+    """Carrega a política de escalonamento definida no arquivo YAML"""
     with open(caminho_yaml, 'r') as f:
         dados = yaml.safe_load(f)
     nome_politica = dados['gp']['config']['politica']['nome']
-    politica = politicaGP.get_politica(nome_politica)
-    if politica is None:
-        print("Erro ao carregar a política.")
-    return politica
+    return politicaGP.get_politica(nome_politica)
 
 if __name__ == "__main__":
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
@@ -55,13 +59,15 @@ if __name__ == "__main__":
     politica = carregar_politica_arquivo(caminho_yaml)
     if politica:
         simulador_obj = simulador(politica)
-        eventos = carregar_processos_arquivo(caminho_yaml)
+        eventos, bcp_dados = carregar_processos_arquivo(caminho_yaml)
         simulador_obj.carregar_eventos(eventos)
+        simulador_obj.preparar_processos(bcp_dados)
 
-        while simulador_obj.indice_evento < len(eventos) or simulador_obj.processo_atual or simulador_obj.fila_prontos or simulador_obj.fila_bloqueados:
+        print("\nIniciando simulação...")
+        while any(p.estado != 'FINALIZADO' for p in simulador_obj.lista_processos.values()):
             simulador_obj.tick()
             time.sleep(1)
 
-        for p in simulador_obj.lista_processos.keys():
-            print(f"Processo {p} rodou por clock: {simulador_obj.lista_processos[p].tempo_executado}")
-            print(f"Processo {p} finalizou no clock: {simulador_obj.lista_processos[p].tempo_termino}")
+        print("\n=== Relatório Final ===")
+        for p in simulador_obj.lista_processos.values():
+            print(f"Processo {p.pid} rodou por {p.tempo_executado} ticks e finalizou no clock {p.tempo_termino}")
