@@ -68,8 +68,13 @@ if __name__ == "__main__":
         print("\nIniciando simulação...")
         while any(p.estado != 'FINALIZADO' for p in simulador_obj.lista_processos.values()):
             simulador_obj.tick()
-            time.sleep(1)
+            time.sleep(0.5)
 
         print("\n=== Relatório Final ===")
         for p in simulador_obj.lista_processos.values():
-            print(f"Processo {p.pid} rodou por {p.tempo_executado} ticks e finalizou no clock {p.tempo_termino}")
+            print(f"Processo {p.pid}:")
+            print(f"  - Instruções executadas: {p.instrucoes_executadas}")
+            print(f"  - Tempo de execução: {p.tempo_executado} ticks")
+            print(f"  - Tempo bloqueado: {p.tempo_bloqueado} ticks")
+            print(f"  - Tempo total: {p.tempo_termino} ticks")
+            print(f"  - Finalizou no clock: {p.tempo_termino}")
