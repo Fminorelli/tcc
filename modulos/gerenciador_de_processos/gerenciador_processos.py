@@ -62,6 +62,8 @@ if __name__ == "__main__":
         eventos, bcp_dados = carregar_processos_arquivo(caminho_yaml)
         simulador_obj.carregar_eventos(eventos)
         simulador_obj.preparar_processos(bcp_dados)
+        print(eventos)
+        print(bcp_dados)
 
         print("\nIniciando simulação...")
         while any(p.estado != 'FINALIZADO' for p in simulador_obj.lista_processos.values()):
