@@ -9,10 +9,10 @@ gp:
     pid1:
       pronto: 0
       instrucoes:
-        - 10 start
-        - 7 block
+        - 1 start
+        - 2 block
         - 2 unblock
-        - 8 block
+        - 4 block
         - 2 unblock
         - 15 end
     pid2:

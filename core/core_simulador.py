@@ -66,9 +66,7 @@ class simulador:
             proc = self.lista_processos[pid]
             if proc.estado == 'BLOQUEADO':
                 print(f"Processo {pid} bloqueado.")
-                # Incrementa o tempo bloqueado para cada tick que o processo está bloqueado
-                proc.tempo_bloqueado += 1
-                print(f"Processo {pid} acumulou {proc.tempo_bloqueado} ticks de bloqueio")
+                # Não incrementamos o tempo_bloqueado aqui, pois já é incrementado em proxima_instrucao()
                 
                 # Executa a próxima instrução para verificar se deve desbloquear
                 resultado = proc.proxima_instrucao()

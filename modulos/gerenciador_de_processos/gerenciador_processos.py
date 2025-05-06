@@ -30,10 +30,6 @@ def carregar_processos_arquivo(caminho_yaml):
             if acao == 'start':
                 processos_bcp[pid]['start'] = int(tempo_ou_valor)
                 i += 1
-            elif acao == 'block':
-                duracao, _ = instrucoes[i + 1].split()
-                processos_bcp[pid]['instrucoes'].append(f"block {duracao}")
-                i += 2
             else:
                 processos_bcp[pid]['instrucoes'].append(f"{acao} {tempo_ou_valor}")
                 i += 1

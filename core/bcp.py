@@ -20,36 +20,7 @@ class BCP:
         self.instrucoes_para_end = 0        # Número total de instruções para finalizar
         self.instrucoes_para_unblock = 0    # Número de ticks para desbloquear
         
-        # Configura os timers de block e unblock
-        for instrucao in self.instrucoes:
-            if instrucao.startswith("block"):
-                try:
-                    _, ticks_execucao = instrucao.split()
-                    self.instrucoes_para_block = int(ticks_execucao)
-                    if self.instrucoes_para_block <= 0:
-                        raise ValueError("Número de ticks para block deve ser positivo")
-                except (ValueError, IndexError) as e:
-                    print(f"Erro ao processar instrução block: {e}")
-            elif instrucao.startswith("unblock"):
-                try:
-                    _, ticks_bloqueio = instrucao.split()
-                    self.instrucoes_para_unblock = int(ticks_bloqueio)
-                    if self.instrucoes_para_unblock <= 0:
-                        raise ValueError("Número de ticks para unblock deve ser positivo")
-                except (ValueError, IndexError) as e:
-                    print(f"Erro ao processar instrução unblock: {e}")
-            elif instrucao.startswith("end"):
-                try:
-                    _, instrucoes_necessarias = instrucao.split()
-                    self.instrucoes_para_end = int(instrucoes_necessarias)
-                    if self.instrucoes_para_end <= 0:
-                        raise ValueError("Número de instruções para end deve ser positivo")
-                except (ValueError, IndexError) as e:
-                    print(f"Erro ao processar instrução end: {e}")
-        
         print(f"BCP criado para processo {pid} com {len(self.instrucoes)} instruções")
-        print(f"Processo {pid} configurado para executar por {self.instrucoes_para_block} ticks antes de bloquear")
-        print(f"Processo {pid} configurado para ficar bloqueado por {self.instrucoes_para_unblock} ticks")
 
     def esta_finalizado(self):
         # Um processo está finalizado se:
@@ -79,23 +50,31 @@ class BCP:
             self.estado = 'FINALIZADO'
             return "END"
             
+        # Se o processo está bloqueado, apenas verifica se deve desbloquear
+        if self.estado == 'BLOQUEADO':
+            self.tempo_bloqueado += 1
+            
+            # Se instrucoes_para_unblock é 0, o processo está bloqueado indefinidamente
+            if self.instrucoes_para_unblock == 0:
+                print(f"Processo {self.pid} bloqueado indefinidamente (acumulou {self.tempo_bloqueado} ticks)")
+                return "BLOQUEADO"
+                
+            print(f"Processo {self.pid} acumulou {self.tempo_bloqueado} ticks de bloqueio de {self.instrucoes_para_unblock}")
+            
+            if self.tempo_bloqueado >= self.instrucoes_para_unblock:
+                print(f"Processo {self.pid} atingiu {self.tempo_bloqueado} ticks de bloqueio, desbloqueando")
+                self.desbloquear()
+                return "PRONTO"
+            return "BLOQUEADO"
+            
         # Se tem um end pendente, continua executando até atingir o número total de instruções
         if self.instrucoes_para_end > 0:
-            if self.estado == 'BLOQUEADO':
-                self.tempo_bloqueado += 1
-                print(f"Processo {self.pid} acumulou {self.tempo_bloqueado} ticks de bloqueio de {self.instrucoes_para_unblock}")
-                
-                if self.tempo_bloqueado >= self.instrucoes_para_unblock:
-                    print(f"Processo {self.pid} atingiu {self.tempo_bloqueado} ticks de bloqueio, desbloqueando")
-                    self.desbloquear()
-                    return "PRONTO"
-            else:
-                self.instrucoes_desde_block += 1
-                
-                if self.instrucoes_para_block > 0 and self.instrucoes_desde_block >= self.instrucoes_para_block:
-                    print(f"Processo {self.pid} atingiu {self.instrucoes_desde_block} instruções desde o block, bloqueando")
-                    self.bloquear()
-                    return "BLOCK"
+            self.instrucoes_desde_block += 1
+            
+            if self.instrucoes_para_block > 0 and self.instrucoes_desde_block >= self.instrucoes_para_block:
+                print(f"Processo {self.pid} atingiu {self.instrucoes_desde_block} instruções desde o block, bloqueando")
+                self.bloquear()
+                return "BLOCK"
             
             # Incrementa o contador de instruções executadas depois de processar
             self.instrucoes_executadas += 1
@@ -115,7 +94,12 @@ class BCP:
         instrucao = self.instrucoes[self.instrucao_atual]
         print(f"Processo {self.pid} processando instrução {self.instrucao_atual}: {instrucao}")
         
-        # Atualiza os timers se encontrar novas instruções de block/unblock
+        # Ignora a instrução start, pois ela só indica quando o processo chega na fila de prontos
+        if instrucao.startswith("start"):
+            self.instrucao_atual += 1
+            return "EXECUTANDO"
+        
+        # Processa as instruções de block e unblock
         if instrucao.startswith("block"):
             try:
                 _, ticks_execucao = instrucao.split()
@@ -146,23 +130,13 @@ class BCP:
                 print(f"Erro ao processar instrução end: {e}")
         
         # Incrementa os contadores apropriados baseado no estado atual
-        if self.estado == 'BLOQUEADO':
-            # Não incrementa o tempo_bloqueado aqui, pois já foi incrementado no bloco anterior
-            print(f"Processo {self.pid} acumulou {self.tempo_bloqueado} ticks de bloqueio de {self.instrucoes_para_unblock}")
-            
-            # Verifica se deve desbloquear
-            if self.tempo_bloqueado >= self.instrucoes_para_unblock:
-                print(f"Processo {self.pid} atingiu {self.tempo_bloqueado} ticks de bloqueio, desbloqueando")
-                self.desbloquear()
-                return "PRONTO"
-        else:
-            self.instrucoes_desde_block += 1
-            
-            # Verifica se deve bloquear
-            if self.instrucoes_para_block > 0 and self.instrucoes_desde_block >= self.instrucoes_para_block:
-                print(f"Processo {self.pid} atingiu {self.instrucoes_desde_block} instruções desde o block, bloqueando")
-                self.bloquear()
-                return "BLOCK"
+        self.instrucoes_desde_block += 1
+        
+        # Verifica se deve bloquear
+        if self.instrucoes_para_block > 0 and self.instrucoes_desde_block >= self.instrucoes_para_block:
+            print(f"Processo {self.pid} atingiu {self.instrucoes_desde_block} instruções desde o block, bloqueando")
+            self.bloquear()
+            return "BLOCK"
         
         self.instrucao_atual += 1
         # Incrementa o contador de instruções executadas depois de processar
@@ -186,8 +160,8 @@ class BCP:
     def desbloquear(self):
         print(f"Processo {self.pid} foi desbloqueado")
         self.estado = 'PRONTO'
-        self.instrucoes_para_unblock = 0  # Reseta o contador de instruções para unblock
         self.tempo_bloqueado = 0  # Reseta o contador de tempo bloqueado
+        self.instrucoes_para_unblock = 0  # Reseta o contador de tempo para desbloquear
 
     def finalizar(self, tempo_termino):
         print(f"Processo {self.pid} finalizando no tempo {tempo_termino}")
