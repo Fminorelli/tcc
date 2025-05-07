@@ -10,3 +10,7 @@ A fazer
     - * Inserir callbacks das politicas
     - * Bloqueio deve agir como end?
 
+- Ao carregar primeiro bloqueio sobrescreve o segundo e nao contabiliza a primeira contagem
+- Ultimo processo finaliza 1 clock após o previsto
+
+    Revisar rotina de bloqueio, para que bloqueie antes de carregar proxima instrução

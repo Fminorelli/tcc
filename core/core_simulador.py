@@ -48,6 +48,15 @@ class simulador:
         print("--- Estado atual ---")
         for pid, proc in self.lista_processos.items():
             print(f"PID {pid}: estado={proc.estado}, exec={proc.tempo_executado}, instr={proc.instrucao_atual}")
+            '''print(f"  - Instruções executadas: {proc.instrucoes_executadas}")
+            print(f"  - Instruções desde block: {proc.instrucoes_desde_block}")
+            print(f"  - Instruções bloqueadas: {proc.instrucoes_bloqueadas}")
+            print(f"  - Instruções para block: {proc.instrucoes_para_block}")
+            print(f"  - Instruções para end: {proc.instrucoes_para_end}")
+            print(f"  - Instruções para unblock: {proc.instrucoes_para_unblock}")
+            print(f"  - Tempo bloqueado: {proc.tempo_bloqueado}")
+            print(f"  - Tempo chegada: {proc.tempo_chegada}")
+            print(f"  - Tempo término: {proc.tempo_termino}")'''
 
         if self.precisa_escalonar():
             self.escalonar_proximo()
