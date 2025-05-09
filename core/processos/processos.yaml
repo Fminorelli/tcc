@@ -3,29 +3,46 @@ gp:
     nome: gerenciador de processos
     politica:
       nome: fifo
-      params:
-
+      params: null
   processos:
     pid 1:
-      pronto: 0
       instrucoes:
-        - 1 start
-        - 2 block 2
-        - 4 block 2
-        - 15 end
+      - 1 start
+      - 2 block 5
+      - 9 block 3
+      - 14 block 2
+      - 15 end
     pid 2:
-      pronto: 0
       instrucoes:
-        - 2 start
-        - 3 block 5
-        - 8 block 3
-        - 20 end
+      - 1 start
+      - 3 block 1
+      - 5 block 4
+      - 7 block 2
+      - 14 block 1
+      - 15 block 2
+      - 18 block 2
+      - 19 block 4
+      - 22 end
     pid 3:
-      pronto: 0
       instrucoes:
-        - 5 start
-        - 8 block 3
-        - 11 block 4
-        - 13 block 5
-        - 18 end
-
+      - 3 start
+      - 1 block 4
+      - 2 block 3
+      - 16 block 5
+      - 17 block 1
+      - 18 block 3
+      - 19 end
+    pid 4:
+      instrucoes:
+      - 1 start
+      - 3 block 4
+      - 8 block 2
+      - 11 block 4
+      - 12 block 3
+      - 17 block 4
+      - 18 end
+    pid 5:
+      instrucoes:
+      - 2 start
+      - 12 block 2
+      - 17 end
