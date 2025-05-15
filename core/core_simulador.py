@@ -43,30 +43,34 @@ class simulador:
     def tick(self):
         self.tempo += 1
         print(f"\n=== [TICK {self.tempo}] ===")
-        
+        #time.sleep(0.2)
         self.verifica_novos()
         self.atualizar_bloqueados()
         
-        if self.precisa_escalonar():
-            self.escalonar_proximo()
+
 
         if self.processo_atual:
             proc = self.lista_processos[self.processo_atual]            
             proc.tempo_executado += 1
             
-            if int(proc.tempo_executado) != int(proc.instrucoes_totais):
+            if int(proc.tempo_executado) <= int(proc.instrucoes_totais):
                 processo_politica = self.politica.tick(self.lista_processos[self.processo_atual])
                 print(f"Processo politica {processo_politica} Processo atual {self.processo_atual}")
                 if processo_politica != self.processo_atual and processo_politica != None:
+                    self.diagrama_eventos.append(f"{self.tempo} {self.processo_atual} ROTATE")
                     self.lista_processos[self.processo_atual].estado = "PRONTO"
+                    if processo_politica in self.fila_prontos:
+                        self.fila_prontos.remove(processo_politica)
                     self.fila_prontos.append(self.processo_atual)
-                    self.fila_prontos.remove(processo_politica)
+                    
                     self.processo_atual = processo_politica
+                    self.diagrama_eventos.append(f"{self.tempo} {self.processo_atual} EXEC")
                     print(f"LISTA DE PRONTOS SIMULADOR: {self.fila_prontos}")
 
             self.executar_processo_atual(proc)
 
-      
+        if self.precisa_escalonar():
+            self.escalonar_proximo()
 
 
         print("--- Estado atual ---")
@@ -113,10 +117,13 @@ class simulador:
         print(f"LISTA DE PRONTOS SIMULADOR: {self.fila_prontos}")
         if pid is not None:
             self.chaveamentos += 1
-            self.fila_prontos.remove(pid)
+                    
+            print(f"> Escalonado processo {pid} para execução.")
+            if pid in self.fila_prontos:
+                self.fila_prontos.remove(pid)
             self.processo_atual = pid
             self.diagrama_eventos.append(f"{self.tempo} {pid} EXEC")
-            print(f"> Escalonado processo {pid} para execução.")
+
             self.executar_processo_atual(proc)
 
     def executar_processo_atual(self,proc):
@@ -126,10 +133,13 @@ class simulador:
 
             if int(proc.tick_block) == int(proc.tempo_executado):
                 print(f"Porcesso atual precisa bloquear {proc.tick_block}  {proc.tempo_executado}")
-                
                 self.politica.bloquear(proc)
+                
                 self.fila_bloqueados.append(proc.pid)
+
                 self.lista_processos[proc.pid].bloquear()
+                if proc.pid in self.fila_prontos:
+                    self.fila_prontos.remove(proc.pid)
                 self.diagrama_eventos.append(f"{self.tempo} {proc.pid} BLOQUEIO")
                 self.processo_atual = None
                 print(f"LISTA DE PRONTOS SIMULADOR: {self.fila_prontos}")
