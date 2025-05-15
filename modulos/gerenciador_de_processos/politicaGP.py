@@ -6,6 +6,7 @@ class politicaGP:
         self.fila_bloqueados = []
         self.fila_finalizados = []
         self.clock = 0  # se quiser armazenar o tempo atual
+        self.quantum = None
 
     @staticmethod
     def get_politica(nome):
@@ -19,8 +20,9 @@ class politicaGP:
         except Exception as e:
             print(f"Erro ao carregar a política {nome}: {e}")
             return None
+    
 
-    def inicializar(self, processos, configuracoes=None):
+    def inicializar(self, bcp_dados, params):
         """Pode ser sobrescrito pelas políticas que usam contexto extra"""
         pass
 

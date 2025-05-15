@@ -9,6 +9,7 @@ class BCP:
         self.tempo_termino = None
         self.tempo_executado = 0      # Tempo real de execução
         self.tempo_bloqueado_total = 0      # Tempo em estado bloqueado total
+        self.qtm_block = False
         
         self.estado = 'EM ESPERA'
         
@@ -32,6 +33,7 @@ class BCP:
             except (ValueError, IndexError) as e:
                 print(f"Erro ao processar instrução block: {e}")
         else:
+            self.tick_block = 0
             print(f"Processo {self.pid} ja consumiu sua ultima instrução")
 
     def finalizar(self, tempo_termino):

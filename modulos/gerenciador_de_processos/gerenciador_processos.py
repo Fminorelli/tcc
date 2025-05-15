@@ -45,21 +45,21 @@ def carregar_processos_arquivo(caminho_yaml):
     return eventos, processos_bcp
 
 
-def carregar_politica_arquivo(caminho_yaml):
-    """Carrega a política de escalonamento definida no arquivo YAML"""
-    with open(caminho_yaml, 'r') as f:
-        dados = yaml.safe_load(f)
-    nome_politica = dados['gp']['config']['politica']['nome']
-    return politicaGP.get_politica(nome_politica)
-
-
+def carregar_politica_arquivo(nome):   
+    return politicaGP.get_politica(nome)
 
 
 if __name__ == "__main__":
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
     caminho_yaml = os.path.join(base_dir, 'core', 'processos', 'processos.yaml')
 
-    politica = carregar_politica_arquivo(caminho_yaml)
+    """Carrega a política de escalonamento definida no arquivo YAML"""
+    with open(caminho_yaml, 'r') as f:
+        dados = yaml.safe_load(f)
+    nome_politica = dados['gp']['config']['politica']['nome']
+    params = dados['gp']['config']['politica']['params']
+
+    politica = carregar_politica_arquivo(nome_politica)
     if politica:
         simulador_gp = simulador(politica)
         eventos, bcp_dados = carregar_processos_arquivo(caminho_yaml)
@@ -67,7 +67,9 @@ if __name__ == "__main__":
         simulador_gp.carregar_eventos(eventos)
         print(f"Dados bcp: {bcp_dados}")
         simulador_gp.preparar_processos(bcp_dados)
-        simulador_gp.politica.inicializar(bcp_dados)
+
+        
+        simulador_gp.politica.inicializar(bcp_dados,params)
 
         print("\nIniciando simulação...")
         while any(p.estado != 'FINALIZADO' for p in simulador_gp.lista_processos.values()):
