@@ -150,6 +150,7 @@ class simulador:
                 ########################################################
                 self.politica.finalizar(proc.pid)
                 ########################################################
-                if self.precisa_escalonar():
+                
+                '''if self.precisa_escalonar():
                     self.escalonar_proximo()
-                return
+                return'''
