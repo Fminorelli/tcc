@@ -2,7 +2,7 @@ import random
 import yaml
 import os
 
-def gerar_processos_yaml(qtd_processos, start_min=1, start_max=10, max_blocks=8, max_cpu=15, max_block_dur=10):
+def gerar_processos_yaml(qtd_processos, start_min=1, start_max=10, max_blocks=3, max_cpu=15, max_block_dur=10):
     processos = {}
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
     caminho_yaml = os.path.join(base_dir, 'core', 'processos', 'processos.yaml')
@@ -46,4 +46,4 @@ def gerar_processos_yaml(qtd_processos, start_min=1, start_max=10, max_blocks=8,
     print("Arquivo 'processos.yaml' gerado com sucesso.")
 
 # Exemplo de uso
-gerar_processos_yaml(qtd_processos=5, start_max=3, max_cpu=25,max_block_dur=6)
+gerar_processos_yaml(qtd_processos=3, start_max=1, max_cpu=15,max_block_dur=3)

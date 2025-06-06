@@ -1,166 +1,106 @@
-from core.bcp import BCP
-import time 
-class simulador:
-    def __init__(self, politica_escalonamento):
-        self.politica = politica_escalonamento
-        self.lista_processos = {}
-        self.fila_prontos = []
-        self.fila_bloqueados = []
-        self.processos_finalizados = []
-        self.processo_atual = None
-        self.tempo = 0
-        self.eventos = []
-        self.chaveamentos = 0
-        self.diagrama_eventos = []
-        print("Simulador inicializado com política de escalonamento:", politica_escalonamento.__class__.__name__)
+import sys
+import os
+import yaml
+import time
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+from modulos.gerenciador_de_processos.gerenciador_de_processos import simulador
+from modulos.gerenciador_de_processos.politicaGP import politicaGP
+from core.stats import AnaliseSimulacao
 
 
+def carregar_processos_arquivo(caminho_yaml):
+    """Carrega e processa o arquivo YAML com a definição dos processos"""
+    with open(caminho_yaml, 'r') as f:
+        dados = yaml.safe_load(f)
 
-    def carregar_eventos(self, eventos):
-        print(f"Carregando {len(eventos)} eventos")
-        self.eventos = eventos
+    processos_yaml = dados['gp']['processos']
+    processos_bcp = {}
 
-    def verifica_novos(self):
-        for evento in self.eventos:
-            if evento['tempo'] == self.tempo:
-                print(f"> Processo {evento['pid']} chegou e foi colocado na fila de prontos.")
-                self.diagrama_eventos.append(f"{self.tempo} {evento['pid']} CRIAÇÃO")
-                self.fila_prontos.append(evento['pid'])
-                
-                ########################################################
-                self.politica.iniciar(evento['pid'])
-                ########################################################
+    for nome_pid, info in processos_yaml.items():
+        pid = int(nome_pid.replace("pid ", ""))
+        instrucoes = info['instrucoes']
+        processos_bcp[pid] = {
+            'start': None,
+            'instrucoes': []
+        }
 
-    def preparar_processos(self, processos_dict):
-        print(f"Preparando {len(processos_dict)} processos")
-        for pid, dados in processos_dict.items():
-            #Cria BCP
-            self.lista_processos[pid] = BCP(pid=pid, dados=dados)
-            #Carrega primeira instrução
-            self.lista_processos[pid].proxima_instrucao()
-            print(f"Processo {pid} preparado com {len(dados['instrucoes'])} instruções")
-      
-    def tick(self):
-        self.tempo += 1
-        print(f"\n=== [TICK {self.tempo}] ===")
-        #time.sleep(0.2)
-        self.verifica_novos()
-        self.atualizar_bloqueados()
+        for instrucao in instrucoes:
+            
+            tempo, acao = instrucao.split(maxsplit=1)
+            if acao == 'start':
+                processos_bcp[pid]['start'] = int(tempo)
+            elif acao =='end':
+                processos_bcp[pid]['end'] = int(tempo)
+            else:
+                processos_bcp[pid]['instrucoes'].append(f"{acao} {tempo}")
+
+    eventos = []
+    for pid, dados in processos_bcp.items():
+        eventos.append({'tempo': dados['start'], 'pid': pid, 'acao': 'start'})
+       
+    eventos.sort(key=lambda e: e['tempo'])
+
+    return eventos, processos_bcp
+
+
+def carregar_politica_arquivo(nome):   
+    return politicaGP.get_politica(nome)
+
+
+if __name__ == "__main__":
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
+    caminho_yaml = os.path.join(base_dir, 'core', 'processos', 'processos.yaml')
+
+    """Carrega a política de escalonamento definida no arquivo YAML"""
+    with open(caminho_yaml, 'r') as f:
+        dados = yaml.safe_load(f)
+    nome_politica = dados['gp']['config']['politica']['nome']
+    params = dados['gp']['config']['politica']['params']
+
+    politica = carregar_politica_arquivo(nome_politica)
+    if politica:
+        simulador_gp = simulador(politica)
+        eventos, bcp_dados = carregar_processos_arquivo(caminho_yaml)
+        #print(f"Eventos {eventos}")
+        simulador_gp.carregar_eventos(eventos)
+        #print(f"Dados bcp: {bcp_dados}")
+        simulador_gp.preparar_processos(bcp_dados)
+
+        
+        simulador_gp.politica.inicializar(bcp_dados,params)
+
+        #print("\nIniciando simulação...")
+        while any(p.estado != 'FINALIZADO' for p in simulador_gp.lista_processos.values()):
+            simulador_gp.tick()
+            #time.sleep(0.3)
         
 
+        '''for p in simulador_gp.lista_processos.values():
+            print(f"Processo {p.pid}:")
+            print(f"  - Instruções executadas: {p.instrucoes_totais}")
+            print(f"  - Tempo de execução: {p.tempo_executado} ticks")
+            print(f"  - Tempo Termino: {p.tempo_termino} ticks")
+            print(f"  - Tempo bloqueado: {p.tempo_bloqueado_total} ticks")'''
+        
 
-        if self.processo_atual:
-            proc = self.lista_processos[self.processo_atual]            
-            proc.tempo_executado += 1
-            
-            if int(proc.tempo_executado) <= int(proc.instrucoes_totais):
-                processo_politica = self.politica.tick(self.lista_processos[self.processo_atual])
-                print(f"Processo politica {processo_politica} Processo atual {self.processo_atual}")
-                if processo_politica != self.processo_atual and processo_politica != None:
-                    self.diagrama_eventos.append(f"{self.tempo} {self.processo_atual} ROTATE")
-                    self.lista_processos[self.processo_atual].estado = "PRONTO"
-                    if processo_politica in self.fila_prontos:
-                        self.fila_prontos.remove(processo_politica)
-                    self.fila_prontos.append(self.processo_atual)
-                    
-                    self.processo_atual = processo_politica
-                    self.diagrama_eventos.append(f"{self.tempo} {self.processo_atual} EXEC")
-                    print(f"LISTA DE PRONTOS SIMULADOR: {self.fila_prontos}")
+        analise = AnaliseSimulacao(simulador_gp.diagrama_eventos, simulador_gp.lista_processos.values())
+        
+        with open(os.path.join(base_dir, 'core', 'processos','saida.txt'),'w+', encoding="utf-8") as f:
+            f.write("=== Relatório Final ===\n")
+            f.write("Chaveamentos: %s\n" %simulador_gp.chaveamentos)
 
-            self.executar_processo_atual(proc)
-
-        if self.precisa_escalonar():
-            self.escalonar_proximo()
+            f.write("Tempo Médio de Retorno: %s\n" % analise.calcular_tempo_medio_retorno())
+            f.write("Tempo Médio de Espera: %s\n" % analise.calcular_tempo_medio_espera())
+            f.write("Vazão por intervalo de 1000 ticks:\n")
+            for intervalo, qtd in analise.calcular_vazao().items():
+                f.write("  %s: %s processo(s)\n" %(intervalo,qtd))
+            f.write("Termino: %s\n" % simulador_gp.processos_finalizados)
 
 
-        print("--- Estado atual ---")
-        print(f"LISTA DE PRONTOS SIMULADOR: {self.fila_prontos}")
-        for pid, proc in self.lista_processos.items():
-            print(
-                f"PID {pid}: estado={proc.estado}, exec={proc.tempo_executado}, instr={proc.instrucao_atual} | "
-                f"executadas={proc.tempo_executado}, prox_block={proc.tick_block}, "
-                f"unblock_em={proc.timer_unblock}, bloqueado_por={proc.tempo_bloqueado}")
-            
-    def atualizar_bloqueados(self):
-        desbloquear_pids = []
-        for pid in list(self.fila_bloqueados):
-            proc = self.lista_processos[pid]
-            if proc.estado == 'BLOQUEADO':
-                self.lista_processos[pid].tempo_bloqueado += 1
-                self.lista_processos[pid].tempo_bloqueado_total += 1
+        #print("\nDiagrama de Eventos")
+        #for e in simulador_gp.diagrama_eventos:
+        #    print(e)
+        analise.gerar_gantt()
 
-                if int(proc.timer_unblock) == int(proc.tempo_bloqueado):
-                    self.diagrama_eventos.append(f"{self.tempo} {proc.pid} DESBLOQUEIO")
-                    desbloquear_pids.append(proc.pid)
-
-        for pid in desbloquear_pids:
-            self.lista_processos[pid].desbloquear()
-            self.fila_bloqueados.remove(pid)
-            self.fila_prontos.append(pid)
-            
-            ######################################################
-            self.politica.desbloquear(pid)
-            ########################################################
-            
-    
-    def precisa_escalonar(self):
-        if self.processo_atual is None:
-            # Verifica se há processos na fila de prontos ou processos em estado PRONTO
-            for pid, proc in self.lista_processos.items():
-                if (proc.estado == 'PRONTO' and pid not in self.fila_prontos) or (proc.estado == 'EXECUTANDO' and pid not in self.fila_prontos): 
-                    self.fila_prontos.append(pid)
-            return bool(self.fila_prontos)
-    
-    def escalonar_proximo(self):             
-        pid = self.politica.selecionar_proximo()
-        proc = self.lista_processos[pid]
-        print(f"LISTA DE PRONTOS SIMULADOR: {self.fila_prontos}")
-        if pid is not None:
-            self.chaveamentos += 1
-                    
-            print(f"> Escalonado processo {pid} para execução.")
-            if pid in self.fila_prontos:
-                self.fila_prontos.remove(pid)
-            self.processo_atual = pid
-            self.diagrama_eventos.append(f"{self.tempo} {pid} EXEC")
-
-            self.executar_processo_atual(proc)
-
-    def executar_processo_atual(self,proc):
-
-        # Verifica se o processo já atingiu seu limite de instruções
-        if self.processo_atual:
-
-            if int(proc.tick_block) == int(proc.tempo_executado):
-                print(f"Porcesso atual precisa bloquear {proc.tick_block}  {proc.tempo_executado}")
-                self.politica.bloquear(proc)
-                
-                self.fila_bloqueados.append(proc.pid)
-
-                self.lista_processos[proc.pid].bloquear()
-                if proc.pid in self.fila_prontos:
-                    self.fila_prontos.remove(proc.pid)
-                self.diagrama_eventos.append(f"{self.tempo} {proc.pid} BLOQUEIO")
-                self.processo_atual = None
-                print(f"LISTA DE PRONTOS SIMULADOR: {self.fila_prontos}")
-
-            else:
-                print(f"> Executando processo {proc.pid}")
-                proc.estado = 'EXECUTANDO'
-
-
-            if int(proc.tempo_executado) == int(proc.instrucoes_totais):
-                proc.finalizar(self.tempo)
-                print(f"> Processo {proc.pid} finalizado após atingir o limite de instruções.")
-                self.diagrama_eventos.append(f"{self.tempo} {proc.pid} TERMINO")
-                self.processos_finalizados.append(proc.pid)
-                if proc.pid in self.fila_prontos:
-                    self.fila_prontos.remove(proc.pid)
-                self.processo_atual = None
-                ########################################################
-                self.politica.finalizar(proc.pid)
-                ########################################################
-                
-                '''if self.precisa_escalonar():
-                    self.escalonar_proximo()
-                return'''
+        

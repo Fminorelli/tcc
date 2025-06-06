@@ -4,7 +4,6 @@ class Fifo(politicaGP):
 
     def selecionar_proximo(self):
         """Seleciona o próximo processo usando a política FIFO (First In, First Out)"""
-        #print(f"RETORNANDO PROCESSO >>>>>>> {self.fila_prontos[0]}")
         return self.fila_prontos[0] if self.fila_prontos else None
     
     def bloquear(self, processo):

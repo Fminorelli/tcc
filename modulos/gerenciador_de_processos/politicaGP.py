@@ -6,7 +6,7 @@ class politicaGP:
         self.fila_bloqueados = []
         self.fila_finalizados = []
         self.clock = 0  # se quiser armazenar o tempo atual
-        self.quantum = None
+      
 
     @staticmethod
     def get_politica(nome):
@@ -15,7 +15,7 @@ class politicaGP:
             modulo = importlib.import_module(f"politicas.{nome}")
             classe_politica = getattr(modulo, nome.capitalize())
             politica = classe_politica()
-            print(f"Política {nome.capitalize()} carregada com sucesso!")
+            #print(f"Política {nome.capitalize()} carregada com sucesso!")
             return politica
         except Exception as e:
             print(f"Erro ao carregar a política {nome}: {e}")
@@ -25,6 +25,10 @@ class politicaGP:
     def inicializar(self, bcp_dados, params):
         """Pode ser sobrescrito pelas políticas que usam contexto extra"""
         pass
+
+    def iniciar(self,processo):
+        """Método abstrato que deve ser implementado pelas políticas específicas"""
+        raise NotImplementedError("A política deve implementar o método iniciar.")
 
     def selecionar_proximo(self,processo):
         """Método abstrato que deve ser implementado pelas políticas específicas"""
@@ -41,3 +45,7 @@ class politicaGP:
     def finalizar(self,processo):
         """Método abstrato que deve ser implementado pelas políticas específicas"""
         raise NotImplementedError("A política deve implementar o método finalizar.")
+        
+    def tick(self,processo):
+        """Método abstrato que deve ser implementado pelas políticas específicas"""
+        raise NotImplementedError("A política deve implementar o método tick.")

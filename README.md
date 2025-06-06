@@ -1,18 +1,22 @@
+# Simulador de Sistemas Operacionais Modular
 
-Feito:
-    * Ignorar eventos de unblock na carga de eventos, ja que estes indicam o timer interno de block do processo - Nova estrutura
-    * BCP do processo é criado na instrução de start
-    * tratar block unblock como uma instrução só 
-    * Inicializar lista de controle nas politicas - FEITO
-    * Bloqueio deve agir como end? -OK
-    * Metodos block e unblock politicas - FEITO
-    * Inserir callbacks das politicas - FEITO
-    * Metricas - ok
-    
-A fazer 
+## 💻 Pré-requisitos
 
-    * Gereador de processos
+Antes de começar, verifique se você possui todas as bibliotecas necessárias:
 
-??   
-    * Controle de filas fica no simulador e nas politicas?
-    
+```
+pip install -r requirements.txt
+```
+
+## ☕ Usando Simulador
+
+Para usar Simulador, siga estas etapas:
+
+1. Gere o arquivo de entrada
+```
+python .\core\processos\gerador.py 
+```
+2. Execute o simulador 
+```
+python .\core\core_simulador.py
+```

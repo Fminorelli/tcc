@@ -124,7 +124,7 @@ class AnaliseSimulacao:
         tempos = []
         for proc in self.bcp:
             if proc.tempo_termino is not None:
-                espera = (proc.tempo_termino - proc.tempo_chegada) - proc.tempo_executado
+                espera = (proc.tempo_termino - proc.tempo_chegada) - proc.tempo_executado - proc.tempo_bloqueado_total
                 tempos.append(espera)
         return sum(tempos) / len(tempos) if tempos else 0
 
