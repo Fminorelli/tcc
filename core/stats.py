@@ -76,12 +76,12 @@ class AnaliseSimulacao:
         for pid, inicio, fim in execucoes:
             cor = legenda_pids[pid]
             ax.broken_barh([(inicio, fim - inicio)], (pid - 0.4, 0.8), facecolors=cor)
-            ax.text(inicio + (fim - inicio) / 2, pid, f"P{pid}", va='center', ha='center', color='white', fontsize=8)
+            ax.text(inicio + (fim - inicio) / 2, pid, f"P{pid}", va='center', ha='center', color='white', fontsize=12)
 
         # CRIAÇÃO: triângulo preto com legenda próxima
         for tempo, pid in criacoes:
             ax.plot(tempo, pid, marker='v', color='black', markersize=6)
-            ax.text(tempo, pid - 0.25, "CRIADO", ha='center', va='top', fontsize=7, color='black')
+            ax.text(tempo, pid - 0.25, "CRIADO", ha='center', va='top', fontsize=11, color='black')
 
         # Mapear fim real por PID
         fim_execucao_por_pid = {}
@@ -94,15 +94,15 @@ class AnaliseSimulacao:
             fim_real = fim_execucao_por_pid.get(pid)
             if fim_real:
                 ax.plot(fim_real, pid, marker='o', color='red', markersize=6)
-                ax.text(fim_real + 0.3, pid, "FIM", ha='left', va='center', fontsize=7, color='red')
+                ax.text(fim_real + 0.3, pid, "FIM", ha='left', va='center', fontsize=11, color='red')
 
         # Legenda
         patches = [mpatches.Patch(color=cor, label=f"P{pid}") for pid, cor in legenda_pids.items()]
         ax.legend(handles=patches, title="Processos", bbox_to_anchor=(1.01, 1), loc='upper left')
 
-        ax.set_xlabel("Tempo (ticks)")
-        ax.set_ylabel("Processos")
-        ax.set_title("Diagrama de Gantt - Execução dos Processos")
+        ax.set_xlabel("Tempo (ticks)", fontsize=12)
+        ax.set_ylabel("Processos", fontsize=12)
+        ax.set_title("Diagrama de Gantt - Execução dos Processos", fontsize=16)
         ax.set_yticks(processos)
         ax.set_yticklabels([f"P{pid}" for pid in processos])
         ax.set_xticks(range(0, max(fim for _, _, fim in execucoes) + 1))

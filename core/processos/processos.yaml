@@ -2,24 +2,26 @@ gp:
   config:
     nome: gerenciador de processos
     politica:
-      nome: rr
-      params: 
+      nome: fifo
+      params:
         quantum: 2
   processos:
     pid 1:
       instrucoes:
       - 1 start
-      - 7 block 3
-      - 8 end
+      - 11 block 3
+      - 15 end
     pid 2:
       instrucoes:
       - 1 start
-      - 10 block 2
-      - 15 end
+      - 3 block 2
+      - 7 block 1
+      - 11 block 2
+      - 14 end
     pid 3:
       instrucoes:
       - 1 start
-      - 3 block 2
-      - 5 block 2
-      - 9 block 3
-      - 13 end
+      - 4 block 3
+      - 5 block 3
+      - 11 block 2
+      - 12 end

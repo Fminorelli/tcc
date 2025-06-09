@@ -23,8 +23,7 @@ class politicaGP:
     
 
     def inicializar(self, bcp_dados, params):
-        """Pode ser sobrescrito pelas políticas que usam contexto extra"""
-        pass
+        raise NotImplementedError("A política deve implementar o método inincializar.")
 
     def iniciar(self,processo):
         """Método abstrato que deve ser implementado pelas políticas específicas"""

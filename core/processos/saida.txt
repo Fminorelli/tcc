@@ -1,7 +1,7 @@
 === Relatório Final ===
-Chaveamentos: 8
-Tempo Médio de Retorno: 31.0
-Tempo Médio de Espera: 15.0
+Chaveamentos: 10
+Tempo Médio de Retorno: 34.333333333333336
+Tempo Médio de Espera: 15.333333333333334
 Vazão por intervalo de 1000 ticks:
   0-999: 3 processo(s)
 Termino: [1, 2, 3]
